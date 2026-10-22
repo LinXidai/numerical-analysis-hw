@@ -1,0 +1,233 @@
+\documentclass[11pt,a4paper]{report}
+\usepackage[a4paper,margin=2.2cm,top=2.4cm,bottom=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+
+\begin{document}
+
+\begin{center}
+Brief Description of Reasoning
+
+Xidai Lin
+\end{center}
+
+\section*{Problem 1}
+\subsection*{a}
+By iterating over each element of the vector, we take the largest absolute difference as $\|\vec{x}-\tilde{\vec{x}}\|_\infty$. After computing $A\vec{x}$, a similar iteration gives $\|A\vec{x}-\vec{b}\|_\infty$.
+
+The result is
+\begin{align*}
+  &\|\vec{x}-\tilde{\vec{x}}\|_\infty=0.500000 \\
+&\|A\vec{x}-\vec{b}\|_\infty=0.300000  
+\end{align*}
+
+
+
+The detailed code is in \texttt{code\_of\_problem\_1a.m}.
+\subsection*{b}
+Similarly, substituting $\tilde{\vec{x}}=(0.33,-7.9,5.8)^\top$ gives
+
+The result is
+\begin{align*}
+  &\|\vec{x}-\tilde{\vec{x}}\|_\infty=0.900000 \\
+&\|A\vec{x}-\vec{b}\|_\infty=0.270000
+\end{align*}
+
+The detailed code is in \texttt{code\_of\_problem\_1b.m}.
+\section*{Problem 2}
+%what if A is in the field of C
+\begin{proof}
+First, we prove \(\rho(A^\top A)=\rho(A)^2\).
+
+Since \(A\) is symmetric, by the Spectral Theorem there exists an
+\emph{orthogonal} matrix \(Q\in M_n(\mathbb{R})\), i.e.\ \(Q^\top Q=QQ^\top=I\),
+and a diagonal matrix \(\Lambda=\operatorname{diag}(\lambda_1,\dots,\lambda_n)\)
+with \(\lambda_i\in\mathbb{R}\), such that
+\[
+A=Q^\top \Lambda Q.
+\]
+Hence
+\[
+A^\top A
+=(Q^\top \Lambda Q)^\top (Q^\top \Lambda Q)
+=Q^\top \Lambda Q Q^\top \Lambda Q
+=Q^\top \Lambda^2 Q,
+\]
+where we used \(QQ^\top=I\). Thus \(A^\top A\) is \emph{orthogonally similar}
+to \(\Lambda^2\), so they have the same eigenvalues:
+\[
+\sigma(A^\top A)=\{\lambda_1^2,\dots,\lambda_n^2\}.
+\]
+Therefore
+\[
+\rho(A^\top A)
+=\max_i \lambda_i^2
+=\Bigl(\max_i |\lambda_i|\Bigr)^2
+=\rho(A)^2.
+\]
+
+Second, we prove that \(\rho(A^\top A)I-A^\top A\) is positive semidefinite.
+
+Since \(Q\) is orthogonal,
+\[
+\rho(A^\top A)I-A^\top A
+=Q^\top\bigl(\rho(A^\top A)I-\Lambda^2\bigr)Q,
+\]
+which is an orthogonal similarity. The matrix
+\(\rho(A^\top A)I-\Lambda^2\) is diagonal with diagonal entries
+\[
+\rho(A^\top A)-\lambda_i^2\ge 0,\qquad i=1,\dots,n,
+\]
+because \(\rho(A^\top A)=\max_i\lambda_i^2\). Hence
+\(\rho(A^\top A)I-\Lambda^2\) is positive semidefinite, and so is
+\(\rho(A^\top A)I-A^\top A\), since orthogonal similarity preserves eigenvalues.
+
+Finally, we prove \(\|A\|_2=\rho(A)\).
+
+For any \(x\in\mathbb{R}^n\), the positive semidefiniteness above gives
+\[
+x^\top\bigl(\rho(A^\top A)I-A^\top A\bigr)x\ge 0,
+\]
+i.e.
+\[
+\|Ax\|_2^2=x^\top A^\top A x\le \rho(A^\top A)\,x^\top x
+=\rho(A)^2\|x\|_2^2.
+\]
+Taking the supremum over \(x\neq 0\),
+\[
+\|A\|_2^2
+=\sup_{x\neq 0}\frac{\|Ax\|_2^2}{\|x\|_2^2}
+\le \rho(A)^2,
+\]
+so
+\[
+\|A\|_2\le \rho(A).
+\]
+
+Conversely, let \(\lambda\) be an eigenvalue of \(A\) with
+\(|\lambda|=\rho(A)\), and let \(x\neq 0\) be a corresponding eigenvector,
+i.e.\ \(Ax=\lambda x\). Then
+\[
+\frac{\|Ax\|_2}{\|x\|_2}
+=\frac{|\lambda|\,\|x\|_2}{\|x\|_2}
+=|\lambda|
+=\rho(A).
+\]
+Since \(\|A\|_2\) is the supremum of \(\|Ax\|_2/\|x\|_2\) over all \(x\neq 0\),
+we obtain
+\[
+\|A\|_2\ge \rho(A).
+\]
+
+Combining both inequalities,
+\[
+\|A\|_2=\rho(A).
+\]
+\end{proof}
+
+\begin{remark}[The complex case]
+For a \emph{normal} complex matrix, i.e.\ \(A^*A=AA^*\), the identity
+\(\|A\|_2=\rho(A)\) still holds. By the spectral theorem for normal matrices
+there exist a unitary matrix \(U\), \(U^*U=UU^*=I\), and a diagonal matrix
+\(\Lambda=\operatorname{diag}(\lambda_1,\dots,\lambda_n)\) such that
+\[
+A=U\Lambda U^*.
+\]
+Then
+\[
+A^*A=(U\Lambda U^*)^*(U\Lambda U^*)=U\Lambda^*\Lambda U^*
+=U\operatorname{diag}(|\lambda_1|^2,\dots,|\lambda_n|^2)U^*,
+\]
+so the eigenvalues of \(A^*A\) are \(|\lambda_1|^2,\dots,|\lambda_n|^2\), and
+therefore
+\[
+\|A\|_2=\sqrt{\rho(A^*A)}=\max_i|\lambda_i|=\rho(A).
+\]
+In particular, every Hermitian matrix \(A^*=A\) is normal, so this extends the
+real symmetric case above. By contrast, a complex \emph{symmetric} matrix
+\(A^\top=A\) is in general neither Hermitian nor normal, so
+\(\|A\|_2=\rho(A)\) need not hold for it.
+\end{remark}
+
+\section*{Problem 3}
+The general code is in \texttt{gauss.m}, which implements Gaussian elimination with scaled partial pivoting.
+\subsection*{a}
+Interchange E1 and E2, then implement Gaussian elimination.
+The final result is:
+\begin{align*}
+     x1 &= 10.0000 \\
+     x2 &= 1.0000
+\end{align*}
+The detailed code is in \texttt{code\_of\_problem3a.m}.
+\subsection*{b}
+Similarly, the final answer is
+\begin{align*}
+  x1 &=0.0000 \\
+  x2 &=10.0000 \\
+  x3 &= 0.1429
+\end{align*}
+\section*{Problem 4}
+The code is in \texttt{jacobi.m}.
+\subsection*{a}
+The result is
+
+The 1st iteration \\
+    1.2500 \\
+   -1.3333 \\
+    0.2000 \\
+
+The 2nd iteration \\
+  1.6333 \\
+   -0.9833 \\
+    0.2333 \\
+
+The 3rd iteration \\
+    1.5542 \\ 
+   -0.8667 \\
+   -0.0600 \\
+\subsection*{b}
+The result is
+
+The 1st iteration \\
+    -2 \\
+     2 \\
+     0 \\
+
+The 2nd iteration \\
+    -1 \\
+     1 \\
+    -1 \\
+
+The 3rd iteration \\
+   -1.7500 \\
+    1.7500 \\
+   -0.5000 \\
+\section*{Problem 5}
+
+The detailed code is in \texttt{seidel.m} and \texttt{Jacobi\_method.m}.
+\subsection*{a}
+Gauss--Seidel algorithm: \\
+The 6th iteration \\
+    0.0354 \\
+   -0.2368 \\
+    0.6578 \\
+Jacobi algorithm: \\
+The 10th iteration \\
+    0.0351 \\
+   -0.2369 \\
+    0.6578 \\
+\subsection*{b}
+Gauss--Seidel algorithm: \\
+The 4th iteration \\
+    0.9957\\
+    0.9579\\
+    0.7916\\
+Jacobi algorithm: \\
+The 7th iteration\\
+    0.9958\\
+    0.9579\\
+    0.7916\\
+\end{document}
