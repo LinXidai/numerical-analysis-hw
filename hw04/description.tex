@@ -21,7 +21,7 @@ where $L_i(x) = \prod_{j=0,j\neq i}^{n} \frac{x-x_j}{x_i-x_j}$.
 
 Add the value into the formula, we have
 \[
-P(x)=\frac{(x-0.3)(x-0.6)}{0.3\times0.6}+e^{0.6}cos(1.8)\cdot\frac{x(x-0.6)}{-0.3\times0.3}+e^4cos(6)\frac{x(x-0.6)}{2\times1.4}
+P(x)=\frac{(x-0.3)(x-0.6)}{0.3\times0.6}+e^{0.6}cos(1.8)\cdot\frac{x(x-0.6)}{-0.3\times0.3}+e^4cos(6)\frac{x(x-0.3)}{0.6\times0.3}
 \]
 
 The error term is
@@ -30,6 +30,17 @@ e(x)=\frac{f^{(n+1)}}{(n+1)!}\cdot\prod_{i=0}^{n}(x-x_i)
 \]
 Substituting the value, we have
 \[
-|e(x)|\leq \frac{2274.181859}{3!}\cdot|x(x-0.3)(x-0.6)| \leq \frac{2274.181859}{6}\times 6= 2274.181859
+|e(x)|\leq \frac{65.652167}{3!}\cdot|x(x-0.3)(x-0.6)| \leq \frac{65.652167}{6}\times 0.010392= 0.1137
 \]
+\subsection*{(b)}
+Similarly, we have
+\[
+P(x)=sin(ln(2))\frac{(x-2.4)(x-2.6)}{(0.4\times0.6)}+sin(ln(2.4))\frac{(x-2)(x-2.6)}{(-0.4\times0.2)}+sin(ln(2.6))\frac{(x-2)(x-2.4)}{(0.6\times0.2)}
+\]
+the error term is
+\[
+e(x)=\frac{f^{(n+1)}}{(n+1)!}\cdot\prod_{i=0}^{n}(x-x_i) \leq \frac{0.335765}{3!}\cdot|x(x-2.4)(x-2.6)| \leq \frac{0.335765}{6}\times 0.016901= 0.000944
+\]
+detailed calculation is shown in the code file P1.m.
+\section*{Problem 2}
 \end{document}
