@@ -28,4 +28,53 @@ Similarly, we have
 
 Detailed calculation is shown in the code file P1.m.
 \section*{Problem 2}
+To produce an \(O(h^6)\) approximation to \(M\), we can use Richardson extrapolation to eliminate the \(h^2\) and \(h^4\) terms successively.
+
+First, we write the expansion for \(N(h)\) and \(N\left(\frac{h}{3}\right)\):
+\begin{align}
+M &= N(h) + K_1 h^2 + K_2 h^4 + K_3 h^6 + \cdots \\
+M &= N\left(\frac{h}{3}\right) + K_1 \left(\frac{h}{3}\right)^2 + K_2 \left(\frac{h}{3}\right)^4 + K_3 \left(\frac{h}{3}\right)^6 + \cdots \nonumber \\
+  &= N\left(\frac{h}{3}\right) + \frac{1}{9}K_1 h^2 + \frac{1}{81}K_2 h^4 + \frac{1}{729}K_3 h^6 + \cdots
+\end{align}
+
+To eliminate the \(K_1 h^2\) term, we multiply the second equation by 9 and subtract the first equation:
+\begin{equation}
+9M - M = 9N\left(\frac{h}{3}\right) - N(h) + \left(\frac{9}{81} - 1\right)K_2 h^4 + \cdots
+\end{equation}
+\begin{equation}
+8M = 9N\left(\frac{h}{3}\right) - N(h) - \frac{8}{9}K_2 h^4 + \cdots
+\end{equation}
+Dividing by 8 gives an \(O(h^4)\) approximation:
+\begin{equation}
+M = \frac{9N(\frac{h}{3}) - N(h)}{8} - \frac{1}{9}K_2 h^4 + \cdots
+\end{equation}
+Let \(N_1(h) = \frac{9N(\frac{h}{3}) - N(h)}{8}\). Then \(M = N_1(h) + C_1 h^4 + C_2 h^6 + \cdots\), where \(C_1 = -\frac{1}{9}K_2\).
+
+Next, we apply the same process to eliminate the \(h^4\) term. We replace \(h\) with \(\frac{h}{3}\) in \(N_1(h)\):
+\begin{equation}
+N_1\left(\frac{h}{3}\right) = \frac{9N(\frac{h}{9}) - N(\frac{h}{3})}{8}
+\end{equation}
+Using the same extrapolation, we multiply \(M = N_1(\frac{h}{3}) + C_1 (\frac{h}{3})^4 + \cdots\) by 81 and subtract \(M = N_1(h) + C_1 h^4 + \cdots\):
+\begin{equation}
+81M - M = 81N_1\left(\frac{h}{3}\right) - N_1(h) + \left(\frac{81}{81} - 1\right)C_2 h^6 + \cdots
+\end{equation}
+\begin{equation}
+80M = 81N_1\left(\frac{h}{3}\right) - N_1(h) - \frac{8}{9}C_2 h^6 + \cdots
+\end{equation}
+Thus, we obtain an \(O(h^6)\) approximation:
+\begin{equation}
+M = \frac{81N_1(\frac{h}{3}) - N_1(h)}{80} + O(h^6)
+\end{equation}
+
+Finally, we substitute \(N_1(h)\) and \(N_1(\frac{h}{3})\) back into the equation:
+\begin{align}
+M &\approx \frac{81 \left[ \frac{9N(h/9) - N(h/3)}{8} \right] - \left[ \frac{9N(h/3) - N(h)}{8} \right]}{80} \nonumber \\
+  &= \frac{81 \left[ 9N(\frac{h}{9}) - N(\frac{h}{3}) \right] - \left[ 9N(\frac{h}{3}) - N(h) \right]}{640} \nonumber \\
+  &= \frac{729N(\frac{h}{9}) - 81N(\frac{h}{3}) - 9N(\frac{h}{3}) + N(h)}{640}
+\end{align}
+
+Therefore, the \(O(h^6)\) approximation to \(M\) is:
+\begin{equation}
+M \approx \frac{729N(\frac{h}{9}) - 90N(\frac{h}{3}) + N(h)}{640}
+\end{equation}
 \end{document}
