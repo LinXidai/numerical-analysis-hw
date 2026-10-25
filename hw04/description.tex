@@ -1,0 +1,35 @@
+\documentclass[11pt,a4paper]{report}
+\usepackage[a4paper,margin=2.2cm,top=2.4cm,bottom=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+\begin{document}
+\begin{center}
+Brief Description of HW04
+
+Xidai Lin
+\end{center}
+\section*{Problem 1}
+\subsection*{(a)}
+The lagrange interpolation polynomial is
+\[
+P(x) = \sum_{i=0}^{n} f(x_i) L_i(x)
+\]
+where $L_i(x) = \prod_{j=0,j\neq i}^{n} \frac{x-x_j}{x_i-x_j}$.
+
+Add the value into the formula, we have
+\[
+P(x)=\frac{(x-0.3)(x-0.6)}{0.3\times0.6}+e^{0.6}cos(1.8)\cdot\frac{x(x-0.6)}{-0.3\times0.3}+e^4cos(6)\frac{x(x-0.6)}{2\times1.4}
+\]
+
+The error term is
+\[
+e(x)=\frac{f^{(n+1)}}{(n+1)!}\cdot\prod_{i=0}^{n}(x-x_i)
+\]
+Substituting the value, we have
+\[
+|e(x)|\leq \frac{2274.181859}{3!}\cdot|x(x-0.3)(x-0.6)| \leq \frac{2274.181859}{6}\times 6= 2274.181859
+\]
+\end{document}
