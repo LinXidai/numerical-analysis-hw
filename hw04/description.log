@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.5)  25 OCT 2026 13:43
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.5)  25 OCT 2026 14:43
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -228,25 +228,59 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 17.
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) [1
 
-{c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] (./description.aux)
+{c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
+e:/课程资料/numerical analysis/hw04/description.tex:84: Missing $ inserted.
+<inserted text> 
+                $
+l.84 
+     
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+e:/课程资料/numerical analysis/hw04/description.tex:84: Display math should end with $$.
+<to be read again> 
+                   \tex_par:D 
+l.84 
+     
+The `$' that I just saw supposedly matches a previous `$$'.
+So I shall assume that you typed `$$' both times.
+
+
+e:/课程资料/numerical analysis/hw04/description.tex:85: LaTeX Error: \begin{equation*} on input line 81 ended by \end{document}.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.85 \end{document}
+                   
+Your command was ignored.
+Type  I <command> <return>  to replace it with another command,
+or  <return>  to continue without it.
+
+[2] (./description.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-03-20>
  ***********
- ) 
+ )
+(\end occurred inside a group at level 1)
+
+### semi simple group (level 1) entered at line 81 (\begingroup)
+### bottom level 
 Here is how much of TeX's memory you used:
  3195 strings out of 467349
  45781 string characters out of 5419863
- 461565 words of memory out of 5000000
+ 463565 words of memory out of 5000000
  32270 multiletter control sequences out of 15000+600000
  633579 words of font info for 62 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 57i,5n,65p,270b,134s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 57i,6n,65p,270b,148s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb>
-Output written on description.pdf (1 page, 95452 bytes).
+Output written on description.pdf (2 pages, 97964 bytes).
 PDF statistics:
- 53 PDF objects out of 1000 (max. 8388607)
- 31 compressed objects within 1 object stream
+ 56 PDF objects out of 1000 (max. 8388607)
+ 33 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
