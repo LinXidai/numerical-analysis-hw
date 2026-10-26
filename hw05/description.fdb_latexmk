@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1793019798.71102 "e:/课程资料/numerical analysis/hw05/description.tex" "description.pdf" "description" 1793019799.36892 0
+["pdflatex"] 1793022842.12849 "e:/课程资料/numerical analysis/hw05/description.tex" "description.pdf" "description" 1793022842.81039 0
   "c:/texlive/2026/texmf-dist/fonts/map/fontname/texfonts.map" 1775381730 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "c:/texlive/2026/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1775374922 1004 54797486969f23fa377b128694d548df ""
   "c:/texlive/2026/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1775374922 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -60,9 +60,9 @@
   "c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1775396899 5618555 a27538ce1809e2d14dd0191458d40c7d ""
   "c:/texlive/2026/texmf-var/web2c/pdftex/pdflatex.fmt" 1775397102 3648456 92cf9c9957a3f71a7c98bab82d90e016 ""
   "c:/texlive/2026/texmf.cnf" 1775396870 713 e69b156964470283e0530f5060668171 ""
-  "description.aux" 1793019799 32 ab05033ccbb38b00a31b200ccedf8001 "pdflatex"
-  "description.tex" 1793019798 4205 f63bf2a180588993a05bb763344fc23d ""
-  "e:/课程资料/numerical analysis/hw05/description.tex" 1793019798 4205 f63bf2a180588993a05bb763344fc23d ""
+  "description.aux" 1793022842 32 ab05033ccbb38b00a31b200ccedf8001 "pdflatex"
+  "description.tex" 1793022841 4571 dce2b004a8bd26f19d62f8485711c355 ""
+  "e:/课程资料/numerical analysis/hw05/description.tex" 1793022841 4571 dce2b004a8bd26f19d62f8485711c355 ""
   (generated)
   "description.aux"
   "description.log"
