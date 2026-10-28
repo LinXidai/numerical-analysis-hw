@@ -7,137 +7,234 @@
 \newtheorem*{remark}{Remark}
 \begin{document}
 \begin{center}
-Brief Description of HW06 \\
+\textbf{Brief Report for Homework 06}\\
 Xidai Lin
 \end{center}
+
 \section*{1-3}
+
 \subsection*{a}
-\subsubsection*{i}
-the exact answer
+\subsubsection*{(i) Exact result}
+The exact value is
 \[
-\frac{4}{5}+\frac{1}{3}=\frac{17}{15}
+\frac{4}{5}+\frac{1}{3}=\frac{17}{15}=1.1\overline{3}.
 \]
-\subsubsection*{ii}
-three-digit chopping
+
+\subsubsection*{(ii) Three-digit chopping}
+After chopping each summand to three significant digits,
 \[
-\frac{4}{5}+\frac{1}{3}=0.800+0.333=1.13
+\frac{4}{5}+\frac{1}{3}=0.800+0.333=1.13.
 \]
+Thus, the relative error is
 \[
-relative \, error \, e= \frac{1.13-\frac{17}{15}}{\frac{17}{15}} \approx 0.002941
+e=\left|\frac{1.13-\frac{17}{15}}{\frac{17}{15}}\right|
+  \approx 0.002941.
 \]
-\subsubsection*{iii}
-three-digit rounding
+
+\subsubsection*{(iii) Three-digit rounding}
+The rounded result is the same in this case:
 \[
-\frac{4}{5}+\frac{1}{3}=0.800+0.333=1.13
+\frac{4}{5}+\frac{1}{3}=0.800+0.333=1.13.
 \]
+Hence,
 \[
-relative \, error \, e= \frac{1.13-\frac{17}{15}}{\frac{17}{15}} \approx 0.002941
+e=\left|\frac{1.13-\frac{17}{15}}{\frac{17}{15}}\right|
+  \approx 0.002941.
 \]
+
 \subsection*{b}
-\subsubsection*{i}
-the exact answer
+\subsubsection*{(i) Exact result}
+The exact value is
 \[
-(\frac{1}{3}+\frac{3}{11})-\frac{3}{20}=\frac{301}{660}
+\left(\frac{1}{3}+\frac{3}{11}\right)-\frac{3}{20}=\frac{301}{660}.
 \]
-\subsubsection*{ii}
-three-digit chopping
+
+\subsubsection*{(ii) Three-digit chopping}
+Chopping each fraction to three significant digits gives
 \[
-(\frac{1}{3}+\frac{3}{11})-\frac{3}{20}=(0.333+0.272)-0.150=0.605-0.150=0.455
+\left(\frac{1}{3}+\frac{3}{11}\right)-\frac{3}{20}
+=(0.333+0.272)-0.150=0.455.
 \]
-relative error
+Therefore,
 \[
-e=\frac{\frac{301}{660}-0.455}{\frac{301}{660}}=0.002325581395349
+e=\left|\frac{\frac{301}{660}-0.455}{\frac{301}{660}}\right|
+  \approx 0.002326.
 \]
-\subsubsection*{iii}
-three-digit rounding
+
+\subsubsection*{(iii) Three-digit rounding}
+Rounding each intermediate value yields
 \[
-(\frac{1}{3}+\frac{3}{11})-\frac{3}{20}=0.456
+\left(\frac{1}{3}+\frac{3}{11}\right)-\frac{3}{20}
+=(0.333+0.273)-0.150=0.456.
 \]
-relative error
+The corresponding relative error is
 \[
-e=\frac{\frac{301}{660}-0.456}{\frac{301}{660}}=1.328903654484572\times10^{-4}
+e=\left|\frac{\frac{301}{660}-0.456}{\frac{301}{660}}\right|
+  \approx 1.3289\times 10^{-4}.
 \]
+
+The MATLAB implementation is provided in \texttt{p1.m}.
+
 \subsection*{1-5}
 \subsection*{a}
-By applying the Bisection method, we have
+Applying the bisection method to the first equation gives the following iteration history.
 \begin{table}[htbp]
 \centering
-\begin{tabular}{c c}
+\begin{tabular}{cc}
 \hline
-Iteration & Midpoint \\
+Iteration & Midpoint\\
 \hline
-1 & 0.500000 \\
-2 & 0.250000 \\
-3 & 0.375000 \\
-4 & 0.312500 \\
-5 & 0.281250 \\
-6 & 0.265625 \\
-7 & 0.257812 \\
-8 & 0.253906 \\
-9 & 0.255859 \\
-10 & 0.256836 \\
-11 & 0.257324 \\
-12 & 0.257568 \\
-13 & 0.257446 \\
-14 & 0.257507 \\
-15 & 0.257538 \\
-16 & 0.257523 \\
+1 & 0.500000\\
+2 & 0.250000\\
+3 & 0.375000\\
+4 & 0.312500\\
+5 & 0.281250\\
+6 & 0.265625\\
+7 & 0.257812\\
+8 & 0.253906\\
+9 & 0.255859\\
+10 & 0.256836\\
+11 & 0.257324\\
+12 & 0.257568\\
+13 & 0.257446\\
+14 & 0.257507\\
+15 & 0.257538\\
+16 & 0.257523\\
 \hline
 \end{tabular}
 \end{table}
 
-The final answer is $0.257530$.
+The approximate root is $0.257530$.
+
 \subsection*{b}
-In the interval of $[0.2,0.3]$, we have
-\begin{table}[htbp]
-\centering
-\begin{tabular}{c c}
-\hline
-Iteration & Midpoint \\
-\hline
-1  & 0.250000 \\
-2  & 0.275000 \\
-3  & 0.287500 \\
-4  & 0.293750 \\
-5  & 0.296875 \\
-6  & 0.298438 \\
-7  & 0.297656 \\
-8  & 0.297266 \\
-9  & 0.297461 \\
-10 & 0.297559 \\
-11 & 0.297510 \\
-12 & 0.297534 \\
-13 & 0.297522 \\
-\hline
-\end{tabular}
-\end{table}
+For the interval $[0.2,0.3]$, the bisection iterations are
 
-The final answer is $0.297528$.
-
-In the interval of $[1.2,1.3]$, we have
 \begin{center}
-
-\begin{tabular}{c c}
+\begin{tabular}{cc}
 \hline
-Iteration & Midpoint \\
+Iteration & Midpoint\\
 \hline
-2  & 1.275000 \\
-3  & 1.262500 \\
-4  & 1.256250 \\
-5  & 1.259375 \\
-6  & 1.257812 \\
-7  & 1.257031 \\
-8  & 1.256641 \\
-9  & 1.256445 \\
-10 & 1.256543 \\
-11 & 1.256592 \\
-12 & 1.256616 \\
-13 & 1.256628 \\
+1 & 0.250000\\
+2 & 0.275000\\
+3 & 0.287500\\
+4 & 0.293750\\
+5 & 0.296875\\
+6 & 0.298438\\
+7 & 0.297656\\
+8 & 0.297266\\
+9 & 0.297461\\
+10 & 0.297559\\
+11 & 0.297510\\
+12 & 0.297534\\
+13 & 0.297522\\
 \hline
 \end{tabular}
 \end{center}
+The approximate root is $0.297528$.
 
-The final answer is $1.256622$.
+For the interval $[1.2,1.3]$, the iteration history is
+\begin{center}
+\begin{tabular}{cc}
+\hline
+Iteration & Midpoint\\
+\hline
+1 & 1.250000\\
+2 & 1.275000\\
+3 & 1.262500\\
+4 & 1.256250\\
+5 & 1.259375\\
+6 & 1.257812\\
+7 & 1.257031\\
+8 & 1.256641\\
+9 & 1.256445\\
+10 & 1.256543\\
+11 & 1.256592\\
+12 & 1.256616\\
+13 & 1.256628\\
+\hline
+\end{tabular}
+\end{center}
+The approximate root is $1.256622$.
 
+The MATLAB implementation is provided in \texttt{p2.m}.
+
+\section*{1-6}
+\subsection*{a}
+We seek a fixed-point function whose iteration is locally convergent near $x_0=1$. Choose
+\[
+g(x)=1-\frac{1}{\pi}\arcsin\!\left(\frac{x}{2}\right),
+\qquad x_{n+1}=g(x_n).
+\]
+Starting with $p_0=1$, the iteration gives the results in Table~\ref{tab:fixed1}.
+
+\begin{table}[htbp]
+\centering
+\caption{Fixed-point iterations for part (a)}
+\label{tab:fixed1}
+\begin{tabular}{cc}
+\hline
+Iteration $n$ & $p_n$\\
+\hline
+0 & 1.000000\\
+1 & 0.833333\\
+2 & 0.863198\\
+3 & 0.857950\\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{b}
+The equation has two roots, located approximately near $1$ and $3.5$. We therefore use two different fixed-point formulations.
+
+For the first root, with $p_0=0$, let
+\[
+g(x)=\frac{e^{x/2}}{\sqrt{3}}.
+\]
+The corresponding iterations are shown in Table~\ref{tab:fixed2}.
+
+\begin{table}[htbp]
+\centering
+\caption{Fixed-point iterations with $p_0=0$}
+\label{tab:fixed2}
+\begin{tabular}{cc}
+\hline
+Iteration $n$ & $p_n$\\
+\hline
+0 & 0.000000\\
+1 & 0.577350\\
+2 & 0.770565\\
+3 & 0.848722\\
+4 & 0.882545\\
+5 & 0.897597\\
+6 & 0.904378\\
+\hline
+\end{tabular}
+\end{table}
+
+For the second root, with $p_0=3.5$, let
+\[
+h(x)=\ln(3)+2\ln(x)=\ln(3x^2).
+\]
+The iteration history is presented in Table~\ref{tab:fixed3}.
+
+\begin{table}[htbp]
+\centering
+\caption{Fixed-point iterations with $p_0=3.5$}
+\label{tab:fixed3}
+\begin{tabular}{cc}
+\hline
+Iteration $n$ & $p_n$\\
+\hline
+0 & 3.500000\\
+1 & 3.604138\\
+2 & 3.662778\\
+3 & 3.695056\\
+4 & 3.712604\\
+5 & 3.722079\\
+\hline
+\end{tabular}
+\end{table}
+
+The C implementation is provided in \texttt{p3.c}.
 
 \end{document}

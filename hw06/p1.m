@@ -30,3 +30,5 @@ exact = 301/660;
 approx = 0.456;
 error=(exact-approx)/exact;
 disp(error);
+%%
+
