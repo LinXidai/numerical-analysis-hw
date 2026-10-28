@@ -236,5 +236,32 @@ Iteration $n$ & $p_n$\\
 \end{table}
 
 The C implementation is provided in \texttt{p3.c}.
+\section*{1-7}
+g' is continuous in the interval [a,b] and $|g'(p)|>1$, so
+\[
+\exists \, \delta_0, \, \forall \xi \in U^\circ(p,\delta_0), \, |g'(\xi)|>1
+\]
+Let $\delta = \min\{\delta_0,p-a,b-p\}$, next prove the statement
+\[
+p_1=g(p_0)
+\]
+\[
+|p_1-p|=|g(p_0)-g(p)|=|g'(\xi)||p_0-p|
+\]
+where,
+\[
+\xi \in (p,p_0) \, or \, \xi \in (p_0,p)
+\]
+Because $0<|p-p_0|<\delta$, so
+\[
+0<|\xi-p|<|p-p_0|<\delta \le \delta_0
+\]
+\[
+|g'(\xi)|>1
+\]
+Thus, 
+\[
+|p_1-p|=|g(p_0)-g(p)|=|g'(\xi)||p_0-p|>|p_0-p|
+\]
 
 \end{document}
