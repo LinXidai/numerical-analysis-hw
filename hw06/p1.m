@@ -19,3 +19,14 @@ disp(301/660);
 disp(0.4561-0.4560);
 %%
 disp(0.00001*660/301);
+%%
+disp(301/660);
+%%
+disp(0.4561-0.455);
+disp(0.0011*660/301);
+%%
+format long
+exact = 301/660;
+approx = 0.456;
+error=(exact-approx)/exact;
+disp(error);
