@@ -1,0 +1,10 @@
+^E:\课程资料\A VAULT\VASE_PROJECT_STARTER\VASE_PROJECT_STARTER\OUTPUT\BUILD\CMAKEFILES\3C5E71C2A744730916DFF14DDAD48FD8\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SE:/课程资料/a vault/vase_project_starter/vase_project_starter/output" "-BE:/课程资料/a vault/vase_project_starter/vase_project_starter/output/build" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "E:/课程资料/a vault/vase_project_starter/vase_project_starter/output/build/VaseReconstruction.slnx"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

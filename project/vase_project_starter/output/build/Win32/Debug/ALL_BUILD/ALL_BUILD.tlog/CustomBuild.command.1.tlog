@@ -1,0 +1,10 @@
+^E:\课程资料\A VAULT\VASE_PROJECT_STARTER\VASE_PROJECT_STARTER\OUTPUT\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SE:/课程资料/a vault/vase_project_starter/vase_project_starter/output" "-BE:/课程资料/a vault/vase_project_starter/vase_project_starter/output/build" --check-stamp-file "E:/课程资料/a vault/vase_project_starter/vase_project_starter/output/build/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

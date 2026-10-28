@@ -1,0 +1,578 @@
+\documentclass[UTF8,a4paper,12pt]{ctexart}
+
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{fancyhdr}
+
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{花瓶轮廓提取、数值拟合与三维重建}
+\rhead{\thepage}
+
+\definecolor{codegray}{RGB}{245,245,245}
+\definecolor{codeblue}{RGB}{30,70,150}
+\lstset{
+  backgroundcolor=\color{codegray},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{codeblue},
+  breaklines=true,
+  columns=fullflexible,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  keepspaces=true
+}
+
+\newcommand{\figplaceholder}[3][0.88\textwidth]{%
+  \begin{figure}[H]
+    \centering
+    \IfFileExists{#2}{%
+      \includegraphics[width=#1]{#2}%
+    }{%
+      \begin{tikzpicture}
+        \draw[dashed,gray] (0,0) rectangle (12,5.5);
+        \node[align=center,gray] at (6,2.75)
+          {此处放置结果图\\[2mm]\texttt{#2}};
+      \end{tikzpicture}%
+    }
+    \caption{#3}
+  \end{figure}
+}
+
+\title{\textbf{基于图像轮廓提取与分段数值拟合的花瓶三维重建}}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+本文针对一张带坐标网格的花瓶图像，建立一条从二维图像到三维旋转曲面的处理流程。
+项目首先使用 OpenCV 完成绘图区截取、坐标标定和轮廓点采集；随后把人工采集的
+右半轮廓转换为数学坐标，并采用弦长参数化的参数曲线表示，避免将复杂轮廓强行
+表示为单值函数 $y=f(x)$。在此基础上，依据花瓶底部、瓶身、瓶肩和瓶口等几何
+部位的不同性质，使用 PCHIP、局部三次样条和 Akima 插值进行分段拟合；最后利用
+关于 $y$ 轴的对称性恢复完整轮廓，并在 OpenGL 中将母线绕竖直轴离散旋转，生成
+可交互观察的三维曲面。本文重点讨论坐标提取、参数化、分段数值方法选择、误差
+诊断以及对称重构的理论依据，三维显示部分只介绍实现所需的关键图形学步骤。
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{项目概述与目标}
+
+\subsection{问题描述}
+输入是一张包含坐标轴、网格和花瓶轮廓的二维图像。目标不是直接识别整幅图像中的
+所有像素，而是获得花瓶右半边边界的一组按轮廓顺序排列的坐标点，并据此：
+\begin{enumerate}[label=\arabic*.]
+  \item 获得一条平滑且尽量准确的二维花瓶母线；
+  \item 依据花瓶的左右对称性补全完整二维轮廓；
+  \item 将二维轮廓绕竖直轴旋转，构造三维花瓶曲面；
+  \item 允许在 OpenGL 窗口中旋转、缩放、平移和改变光照。
+\end{enumerate}
+
+\subsection{项目结构}
+\begin{longtable}{p{0.29\textwidth}p{0.63\textwidth}}
+\toprule
+\textbf{文件或目录} & \textbf{作用}\\
+\midrule
+\texttt{extract\_vase.py} & OpenCV 人工主导提取程序；负责选择图像、选择 ROI、坐标标定、逐点点击轮廓和输出坐标。\\
+\texttt{extract\_vase\_hybrid.py} & OpenCV 协同提取程序；在人工锚点基础上进行局部边缘吸附和轮廓加密。\\
+\texttt{vase\_points.csv} & 输入轮廓点，包含数学坐标以及原图像素坐标。\\
+\texttt{fit\_methods.py} & 多种统一参数曲线插值/拟合方法的对比实验程序。\\
+\texttt{final\_fit.py} & 最终分段拟合程序，输出右半曲线、完整镜像轮廓、诊断表和比较图。\\
+\texttt{fit\_output/} & 各种拟合方法和最终方法的 CSV、图像及汇总结果。\\
+\texttt{output/src/main.cpp} & GLUT/OpenGL 三维旋转曲面显示程序。\\
+\texttt{output/CMakeLists.txt} & CMake 构建配置，链接本地 GLUT 和系统 OpenGL 库。\\
+\texttt{output/include}, \texttt{output/lib} & GLUT 头文件、导入库和 DLL。\\
+\bottomrule
+\end{longtable}
+
+\subsection{总体流程}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=8mm and 10mm, every node/.style={draw, rounded corners, align=center, minimum height=9mm}]
+\node (image) {原始图像};
+\node (roi) [right=of image] {ROI\\绘图区};
+\node (calib) [right=of roi] {坐标标定\\$O,x=5,y=5$};
+\node (points) [right=of calib] {按序轮廓点\\$(x_i,y_i)$};
+\node (fit) [below=of points] {弦长参数化\\分段拟合};
+\node (sym) [left=of fit] {关于 $y$ 轴\\镜像};
+\node (mesh) [left=of sym] {旋转曲面\\网格};
+\node (render) [left=of mesh] {OpenGL\\交互显示};
+\draw[->] (image)--(roi)--(calib)--(points)--(fit)--(sym)--(mesh)--(render);
+\end{tikzpicture}
+\caption{项目整体数据流}
+\end{figure}
+
+\section{图像处理与坐标提取}
+
+\subsection{ROI 选择与候选像素预览}
+\texttt{extract\_vase.py} 使用 \texttt{cv2.selectROI} 从原图中截取包含坐标网格和花瓶
+轮廓的绘图区。ROI 的意义是将后续坐标处理限制在一个局部坐标系中，减少无关背景
+和图像边缘对操作的影响。
+
+程序同时将 ROI 转换为灰度图并进行高斯滤波：
+\[
+ I_g = G_{\sigma} * I,
+\]
+其中 $G_{\sigma}$ 是高斯核，卷积用于抑制单像素噪声。随后使用固定阈值生成暗像素
+候选图：
+\[
+ B(u,v)=
+ \begin{cases}
+ 255,&I_g(u,v)<T,\\
+ 0,&I_g(u,v)\geq T.
+ \end{cases}
+\]
+当前实现取 $T=100$。该二值图仅用于检查，并不直接作为最终轮廓。原因是坐标网格、
+坐标轴、文字和真实轮廓都可能产生暗像素；在本项目中，人工确认轮廓点比把所有暗
+像素自动连成一条曲线更可靠。
+
+\figplaceholder[0.78\textwidth]{../threshold_preview.png}{阈值候选像素预览（可替换为最终结果图）}
+
+\subsection{三个校准点与像素到数学坐标的转换}
+用户依次点击原点 $O$、横轴上 $x=5$ 的点和纵轴上 $y=5$ 的点。设三点像素坐标为
+\[
+ O=(u_0,v_0),\qquad X_5=(u_5,v_5),\qquad Y_5=(u'_5,v'_5).
+\]
+横向和纵向的像素尺度分别为
+\[
+ s_x=\frac{u_5-u_0}{5},\qquad
+ s_y=\frac{v_0-v'_5}{5}.
+\]
+图像坐标的 $v$ 轴向下，而数学坐标的 $y$ 轴向上，因此任意轮廓像素点
+$P=(u,v)$ 转换为
+\[
+ x=\frac{u-u_0}{s_x},\qquad
+ y=\frac{v_0-v}{s_y}.
+\]
+分别使用 $s_x$ 和 $s_y$ 的好处是允许原图在水平方向和竖直方向存在不同的像素比例；
+但这也意味着校准点必须准确，否则缩放误差会传播到整个拟合轮廓。
+
+\subsection{轮廓点的顺序约束}
+人工点击从顶部中心附近开始，沿右半轮廓依次经过瓶身、瓶底、最大宽度、
+瓶肩和瓶口，最后回到顶部。因此输入点不是按 $x$ 排序，而是按边界曲线的行进顺序
+排列。这个约束非常关键：轮廓在瓶底和瓶口附近可能不是 $y=f(x)$ 的单值函数，
+但一定可以表示为参数曲线
+\[
+ \bm{r}(t)=(x(t),y(t)),\qquad 0\leq t\leq 1.
+\]
+如果按照 $x$ 排序，瓶口回折、瓶底水平段等局部结构会被破坏。
+
+\subsection{两种轮廓提取方案}
+
+本项目保留两种可以独立使用的坐标提取程序。两者都使用相同的图像读取、ROI
+选择、三个校准点和像素到数学坐标的转换，因此输出格式一致，均可直接交给
+\texttt{final\_fit.py}。区别在于轮廓点的产生方式：
+\begin{itemize}
+  \item \textbf{人工主导方案：}\texttt{extract\_vase.py}。用户沿轮廓依次点击每个
+  需要保留的点，程序只负责记录点、转换坐标并生成检查图；
+  \item \textbf{协同方案：}\texttt{extract\_vase\_hybrid.py}。用户点击较少的
+  锚点，程序在锚点附近进行边缘吸附，并在相邻锚点之间自动生成更密集的候选点。
+\end{itemize}
+
+\subsubsection{方案一：人工主导的 \texttt{extract\_vase.py}}
+
+原始程序的流程是：
+\begin{enumerate}
+  \item 选择包含坐标网格和花瓶的 ROI；
+  \item 依次点击 $O$、$x=5$、$y=5$ 完成坐标校准；
+  \item 从顶部开始沿右半轮廓按顺序逐点点击；
+  \item 按 Enter 保存点击点，按右键或 Backspace 撤销最后一点。
+\end{enumerate}
+程序不会擅自改变用户点击的位置，因此其优点是行为可预测、不会把网格线自动
+吸附进来，并且适合瓶口、瓶底等需要人工判断的复杂区域。缺点是输出点的位置
+直接受到鼠标定位影响，点间距可能不均匀；如果点击点过少，后续拟合还需要承担
+较大的局部几何误差。
+
+\subsubsection{方案二：人工锚点与自动吸附的 \texttt{extract\_vase\_hybrid.py}}
+
+纯人工点击的主要误差来自鼠标定位误差、轮廓线较细以及网格线和坐标轴的干扰；
+完全自动提取则容易把网格线、文字或坐标轴误认为花瓶边界。因此项目增加了
+\texttt{extract\_vase\_hybrid.py}，采用“人工锚点 + 局部边缘吸附 + 曲线加密”的
+协同流程：
+\begin{enumerate}
+  \item 用户仍然手动选择 ROI 和三个校准点，保证坐标系的语义正确；
+  \item 用户只需沿轮廓顺序点击较少的锚点，而不必点击每一个输出点；
+  \item 程序在每个锚点附近搜索 Canny 边缘候选点，并以边缘强度减去距离惩罚
+  的分数选择最可能的轮廓像素：
+  \[
+  Q(p)=G(p)-\lambda\|p-p_{\mathrm{click}}\|_2,
+  \]
+  其中 $G(p)$ 是局部梯度强度，$\lambda$ 控制吸附距离；
+  \item 对相邻人工锚点进行线性预测，在预测位置附近再次局部吸附，形成更密集的
+  轮廓点；
+  \item 保存前由用户检查红色锚点和绿色加密曲线，必要时使用右键或 Backspace
+  删除最后一个锚点并重新点击。
+\end{enumerate}
+这种方法可以降低“鼠标没有点在轮廓线上”的像素级误差，但不能保证自动边缘一定
+属于花瓶轮廓。特别是在轮廓与网格线相交的位置，仍然应增加人工锚点或关闭辅助
+预览进行检查。因此它是辅助提取而不是无监督自动识别。推荐运行：
+\begin{lstlisting}[language=Python]
+python extract_vase_hybrid.py
+\end{lstlisting}
+红点表示人工锚点，绿色线表示程序加密后的候选轮廓；只有检查无误后才继续使用
+\texttt{vase\_points.csv} 进行拟合。
+
+\subsubsection{两种方案的优缺点比较}
+
+\begin{table}[H]
+\centering
+\caption{人工主导方案与协同方案比较}
+\begin{tabular}{p{0.20\textwidth}p{0.34\textwidth}p{0.34\textwidth}}
+\toprule
+\textbf{比较项目} & \textbf{\texttt{extract\_vase.py}} & \textbf{\texttt{extract\_vase\_hybrid.py}}\\
+\midrule
+点的来源 & 每个点均由人工点击 & 人工锚点加局部自动吸附和加密\\
+定位误差 & 较依赖鼠标精度 & 通常可降低鼠标偏离轮廓的误差\\
+网格线干扰 & 人工可以直接避开 & 可能吸附到更强的网格线，需要检查\\
+点间距 & 由人工决定，可能不均匀 & 自动加密，点间距更均匀\\
+复杂转折 & 人工判断能力强 & 需要增加锚点，避免错误跨越\\
+可重复性 & 同一人重复点击仍可能不同 & 参数固定时加密规则更一致\\
+操作成本 & 需要点击较多点 & 需要点击较少锚点\\
+适合场景 & 轮廓较短、边缘不清晰或结构复杂 & 轮廓较长、边缘清晰且希望降低定位误差\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+两种方法都不是无误差的自动识别。对于本项目，推荐采用混合策略：先用
+\texttt{extract\_vase\_hybrid.py} 快速获得密集轮廓，再在瓶口、瓶底、瓶肩和
+网格线交叉处增加锚点或使用 \texttt{extract\_vase.py} 逐点重新采集。若自动
+吸附结果在检查图中跳到网格线，应优先使用人工主导方案，而不是盲目增大吸附
+半径。最终选择标准应是 \texttt{contour\_review.png} 中轮廓是否连续、是否
+保持正确的点序，而不是自动生成点的数量。
+
+\figplaceholder[0.78\textwidth]{../contour_review.png}{人工点击轮廓点检查图}
+
+\section{轮廓的参数化表示}
+
+\subsection{为什么使用参数曲线}
+花瓶轮廓存在竖直近似段、水平近似段和转折段。将其写成 $y=f(x)$ 会遇到：
+\begin{itemize}
+  \item 竖直段的斜率趋于无穷；
+  \item 同一个 $x$ 可能对应多个边界位置；
+  \item 插值自变量的单调性要求难以满足。
+\end{itemize}
+因此程序分别拟合 $x(t)$ 和 $y(t)$，而不是拟合一个显式函数。
+
+\subsection{弦长参数}
+设按顺序排列的清洗后点为 $\bm{p}_i=(x_i,y_i)$，相邻点距离为
+\[
+ \Delta s_i=\|\bm{p}_i-\bm{p}_{i-1}\|_2
+ =\sqrt{(x_i-x_{i-1})^2+(y_i-y_{i-1})^2}.
+\]
+定义累计弦长
+\[
+ s_0=0,\qquad s_i=\sum_{j=1}^{i}\Delta s_j,
+\]
+并归一化为
+\[
+ t_i=\frac{s_i}{s_n}.
+\]
+这就是代码中的 \texttt{chord\_parameter}。与直接使用点编号相比，弦长参数能反映
+轮廓的实际几何距离：长直段和密集采样段不会仅仅因为索引相邻而被赋予相同的参数跨度。
+
+\section{多种数值方法及理论依据}
+
+\subsection{分段线性插值}
+在线性插值中，区间 $[t_i,t_{i+1}]$ 上：
+\[
+ f(t)=f_i+\frac{f_{i+1}-f_i}{t_{i+1}-t_i}(t-t_i).
+\]
+其优点是稳定、局部、不会产生额外过冲，并且一定经过采样点。缺点是相邻区间的
+一阶导数通常不连续，因此视觉上会出现折角。它适合作为基线方法，而不是最终的
+光滑轮廓。
+
+\subsection{自然三次样条}
+三次样条在每个区间上使用三次多项式，并要求：
+\[
+ S(t_i)=f_i,\quad S'(t_i^-)=S'(t_i^+),\quad
+ S''(t_i^-)=S''(t_i^+).
+\]
+自然边界条件为
+\[
+ S''(t_0)=S''(t_n)=0.
+\]
+三次样条具有较好的光滑性，适合瓶底圆角等需要连续曲率变化的局部区域。但是，
+它可能在相邻点之间产生过冲；对人工点击误差也较敏感。因此本项目不对整条轮廓
+使用一个全局三次样条，而只在瓶底圆角处使用局部自然三次样条。
+
+\subsection{PCHIP 保形插值}
+PCHIP（Piecewise Cubic Hermite Interpolating Polynomial）使用分段三次 Hermite
+多项式，并根据相邻割线斜率构造节点导数。其核心目标是当数据在局部单调时保持
+单调，避免普通高阶样条产生不必要的极值和振荡。
+
+对花瓶的窄颈、近似直线瓶身和瓶口边缘而言，保形性比二阶光滑性更重要。PCHIP
+不保证二阶导数连续，但通常能保持原始数据的范围和局部趋势，因此是本项目的
+主要稳健方法。
+
+\subsection{Akima 局部插值}
+Akima 插值根据邻近区间斜率的加权关系估计节点导数，权重会降低异常斜率对局部
+结果的影响。它具有局部性：一个采样点的改变主要影响附近区域，而不会像全局
+多项式那样改变整条曲线。
+
+瓶肩是曲率变化较明显但又不适合过度振荡的区域，因此使用 Akima 作为平滑性与
+局部鲁棒性的折中。
+
+\subsection{不采用全局低阶多项式的原因}
+如果使用
+\[
+ x(t)\approx\sum_{k=0}^{d}a_k t^k,\qquad
+ y(t)\approx\sum_{k=0}^{d}b_k t^k,
+\]
+所有轮廓点会共同决定每个系数。瓶底的局部误差可能影响瓶口和瓶肩，且低阶多项式
+无法同时表达近似竖直、水平、外扩和收缩等多个几何阶段。当前项目的五次多项式
+结果明显偏离输入轮廓，因此仅作为对照，不作为最终方法。
+
+\section{基于几何部位的分段拟合设计}
+
+\subsection{分段边界识别}
+\texttt{final\_fit.py} 不使用固定的等长度分割，而是从坐标中寻找几何特征：
+\begin{enumerate}
+  \item $y$ 的最小值定位瓶底；
+  \item $x$ 的最大值定位最大宽度；
+  \item 相对于最低点的高度增量定位瓶底圆角结束；
+  \item 上升到指定高度后定位瓶肩和瓶口过渡区；
+  \item 使用轮廓序列顺序保证这些特征依次出现。
+\end{enumerate}
+本次数据自动得到的主要边界为
+\[
+ [0,22,30,37,41,51,63].
+\]
+其中 41 是瓶肩过渡的辅助几何边界，实际拟合将瓶肩区域覆盖为索引 37--51。
+
+\subsection{本项目的最终分段策略}
+\begin{table}[H]
+\centering
+\caption{最终分段方法}
+\begin{tabular}{llll}
+\toprule
+\textbf{区域} & \textbf{点索引} & \textbf{方法} & \textbf{选择依据}\\
+\midrule
+顶部窄颈至底部 & 0--22 & PCHIP & 保持近似竖直趋势，避免横向过冲\\
+瓶底圆角 & 22--30 & 自然三次样条 & 需要平滑圆角过渡\\
+下部瓶身 & 30--37 & PCHIP & 保持外扩趋势和最大宽度附近稳定性\\
+瓶肩过渡 & 37--51 & Akima & 局部平滑，抑制全局振荡\\
+瓶口与顶部 & 51--63 & PCHIP & 保持顶部转折和首尾形状\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+每一段都对 $x(t)$ 和 $y(t)$ 分别建立插值器，再按照该段的弧长比例分配采样点。
+段与段拼接时删除重复端点，最后统一重采样为 1200 个点。这样可以同时获得：
+\begin{itemize}
+  \item 输入点处的几何约束；
+  \item 各区域适合的局部光滑性；
+  \item 输出 CSV 的统一采样密度。
+\end{itemize}
+
+\section{误差诊断与算法结果分析}
+
+\subsection{误差定义}
+令拟合曲线在输入参数 $t_i$ 处的值为 $\widehat{\bm p}_i$，输入点为
+$\bm p_i$，则点到曲线的离散欧氏误差定义为
+\[
+ e_i=\|\widehat{\bm p}_i-\bm p_i\|_2
+ =\sqrt{(\widehat{x}_i-x_i)^2+(\widehat{y}_i-y_i)^2}.
+\]
+程序计算：
+\[
+ \operatorname{RMSE}=
+ \sqrt{\frac{1}{n}\sum_{i=1}^{n}e_i^2},\qquad
+ e_{\max}=\max_i e_i.
+\]
+需要强调，这一误差是在已参与拟合的输入点上计算的，主要用于检查实现和拟合
+偏差，不能等同于对未知真实轮廓的泛化误差。
+
+\subsection{本次数据的结果}
+当前输入有效点数为 64，最终曲线采样点数为 1200。程序输出：
+\[
+ \operatorname{RMSE}\approx 0.00130993,\qquad
+ e_{\max}\approx 0.00727019.
+\]
+最终右半曲线的坐标范围约为：
+\[
+ x\in[0.000039,\ 4.266053],\qquad
+ y\in[-6.365073,\ 6.798246].
+\]
+首尾点均为顶部中心附近的同一点，因此镜像轮廓可以形成闭合的顶部连接。
+
+\subsection{与统一方法的比较}
+统一线性插值的优点是稳健，但存在折角；统一三次样条和 B 样条较平滑，却可能在
+瓶底和瓶口产生过冲；PCHIP 更保形，但曲率变化较硬；Akima 对局部转折更灵活。
+平滑样条和五次全局多项式虽然可以压制噪声或减少参数数量，但前者会改变瓶底和
+瓶肩的真实几何，后者会产生明显的全局形状偏差。
+
+\figplaceholder[0.91\textwidth]{../fit_output/method_comparison.png}{各种统一拟合方法的右半轮廓比较}
+\figplaceholder[0.91\textwidth]{../fit_output/full_vase_comparison.png}{各种统一拟合方法的完整轮廓比较}
+\figplaceholder[0.91\textwidth]{../fit_output/final_fit_comparison.png}{最终分段拟合和镜像重构结果}
+
+\subsection{结果分析中的局限性}
+\begin{enumerate}
+  \item 输入点由人工点击获得，点的位置误差通常大于浮点计算误差；因此提高点击质量
+  比盲目提高插值阶数更重要。
+  \item 当前 RMSE 是训练点误差。若要严格比较方法，应留出部分点，或使用更密集且
+  可信的人工参考曲线计算验证误差。
+  \item 镜像重构依赖花瓶具有关于 $y$ 轴的对称性。如果原物体本身不对称，镜像会
+  抹去真实的不对称特征。
+  \item 分段边界使用当前数据的几何规则。更换尺度或轮廓类型时，应将高度阈值改为
+  归一化阈值，或使用曲率和切向方向自动识别。
+\end{enumerate}
+
+\section{对称性重构}
+
+\subsection{二维完整轮廓}
+设右半边拟合曲线为
+\[
+ \bm r(t)=(x(t),y(t)),\qquad x(t)\geq 0.
+\]
+关于 $y$ 轴的镜像变换为
+\[
+ \mathcal{M}(x,y)=(-x,y).
+\]
+程序按“镜像左侧反向 + 原右侧正向”的顺序拼接：
+\[
+ \bm r_{\mathrm{full}}
+ =
+ \left\{(-x(1-t),y(1-t))\right\}_{t\in[0,1]}
+ \cup
+ \left\{(x(t),y(t))\right\}_{t\in[0,1]}.
+\]
+反向是为了让完整轮廓沿边界连续行进，并避免在拼接处跳跃。
+
+\subsection{三维旋转曲面}
+事实上，若右半轮廓作为母线绕 $y$ 轴旋转，三维曲面参数方程为
+\[
+ \bm S(t,\theta)=
+ \bigl(x(t)\cos\theta,\ y(t),\ x(t)\sin\theta\bigr),
+ \qquad
+ 0\leq t\leq1,\quad 0\leq\theta<2\pi.
+\]
+OpenGL 程序将 $\theta$ 离散为 96 个角度采样：
+\[
+ \theta_j=\frac{2\pi j}{96},\qquad j=0,\ldots,96.
+\]
+每相邻两个母线点和相邻两个角度点构成一个四边形带，所有四边形带拼接成花瓶
+曲面。提高圆周采样数可以减少圆周方向的多边形棱角，但不会改变二维母线的拟合
+误差。
+
+\section{OpenGL 与图形学实现简述}
+
+\subsection{读取与网格生成}
+\texttt{main.cpp} 启动时读取 \texttt{final\_fit\_right\_curve.csv}，通过 CSV 表头
+查找 \texttt{x} 和 \texttt{y} 列，避免把弧长参数 \texttt{t} 错当成半径。每个数据点
+存储为：
+\begin{lstlisting}[language=C++]
+struct ProfilePoint {
+    double radius;
+    double height;
+};
+\end{lstlisting}
+程序在运行时把 \texttt{radius=x}、\texttt{height=y} 代入旋转曲面方程。
+
+\subsection{法向量与光照}
+设相邻母线点差分为
+\[
+ \Delta r=r_{i+1}-r_i,\qquad
+ \Delta h=h_{i+1}-h_i,\qquad
+ L=\sqrt{\Delta r^2+\Delta h^2}.
+\]
+程序使用近似母线法向分量
+\[
+ n_r=\frac{\Delta h}{L},\qquad
+ n_h=-\frac{\Delta r}{L},
+\]
+再绕圆周方向展开为
+\[
+ \bm n(\theta)=(n_r\cos\theta,n_h,n_r\sin\theta).
+\]
+该法向用于 OpenGL 的漫反射和镜面反射计算，使曲面具有基本的立体明暗效果。
+程序还启用了深度测试、平滑着色、材质参数和单个可控光源。
+
+\subsection{交互控制}
+键盘事件只修改运行时状态，不修改曲面数据：
+\begin{itemize}
+  \item 方向键或 W/A/S/D 修改模型旋转角；
+  \item $+$、$-$ 或 PageUp/PageDown 修改摄像机距离；
+  \item I/J/K/L 修改观察中心；
+  \item F 切换光照，1/2/3 切换灯光颜色；
+  \item T 切换实体和线框模式；
+  \item Space 切换自动旋转。
+\end{itemize}
+状态改变后调用 \texttt{glutPostRedisplay()}，由 GLUT 再次执行显示回调。CSV 只在
+程序启动时读取一次；如果重新生成拟合 CSV，不需要重新编译，但需要重新启动程序。
+
+\section{结论}
+
+本项目的核心不在于使用某一个高阶拟合公式，而在于建立符合几何结构的数值处理
+流程。OpenCV 阶段通过人工确认解决了网格、坐标轴和轮廓之间的像素分离问题；坐标
+标定把像素点转化为可解释的数学坐标；弦长参数化使轮廓可以在存在竖直段和回折段
+时稳定表示；分段拟合依据瓶底、瓶身、瓶肩和瓶口的局部特征选择方法，从而避免
+全局多项式和过强平滑造成的形状失真；最后利用对称性和旋转曲面方程完成三维重建。
+
+对于当前数据，PCHIP 提供主体区域的保形稳定性，局部自然三次样条提供瓶底圆滑性，
+Akima 提供瓶肩区域的局部平滑性。最终结果在输入点上的 RMSE 约为 $0.00131$，
+最大误差约为 $0.00727$。这些指标说明实现具有较好的离散点贴合能力，但正式的
+数值分析仍应增加独立验证点、交叉验证或人工高精度参考轮廓。
+
+\appendix
+\section{推荐运行方式}
+
+\subsection{提取坐标}
+\begin{lstlisting}[language=Python]
+# 人工主导方案
+python extract_vase.py
+
+# 人工锚点 + 自动吸附方案
+python extract_vase_hybrid.py
+\end{lstlisting}
+两种程序都需要依次选择图像 ROI、点击 $O$、$x=5$、$y=5$。第一种随后逐点点击
+轮廓；第二种点击较少的锚点并由程序加密。两者都应检查
+\texttt{contour\_review.png} 后再继续拟合。
+
+\subsection{运行最终拟合}
+\begin{lstlisting}[language=Python]
+python final_fit.py
+\end{lstlisting}
+输出位于 \texttt{fit\_output/final\_*}。
+
+\subsection{构建和运行 OpenGL 程序}
+\begin{lstlisting}[language=bash]
+cd output
+cmake -S . -B build
+cmake --build build --config Release
+\end{lstlisting}
+运行程序时可以显式传入拟合结果：
+\begin{lstlisting}[language=bash]
+VaseReconstruction.exe ../../fit_output/final_fit_right_curve.csv
+\end{lstlisting}
+
+\section{结果图放置清单}
+以下位置可由作者自行替换为实验截图或最终结果图：
+\begin{enumerate}
+  \item 原图与 ROI 标定过程；
+  \item 阈值预览图；
+  \item 人工点击轮廓检查图；
+  \item 各种数值方法的右半轮廓比较图；
+  \item 完整二维镜像轮廓图；
+  \item OpenGL 三维模型不同视角截图；
+  \item 线框模式、不同光照和交互操作截图。
+\end{enumerate}
+报告中的图形占位框会在相应文件存在时自动显示图片；否则保留虚线占位框，
+方便后续替换。
+
+\end{document}
