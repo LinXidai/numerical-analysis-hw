@@ -1,0 +1,44 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ---- C/C++ 编译产物 ----
+project/vase_project_starter/viewer/build/
+*.obj
+*.o
+*.exe
+*.pdb
+*.ilk
+*.tlog
+*.recipe
+*.lastbuildstate
+
+# ---- CMake 生成文件 ----
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# ---- LaTeX 中间文件（保留 .tex 和 .pdf）----
+*.aux
+*.log
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.out
+*.toc
+*.bbl
+*.blg
+*.xdv
+
+# ---- 编辑器配置（含个人绝对路径）----
+.vscode/
+
+# ---- 打包提交件 ----
+*.zip
+
+# ---- 操作系统 ----
+.DS_Store
+Thumbs.db
+desktop.ini

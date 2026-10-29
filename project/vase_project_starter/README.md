@@ -25,7 +25,7 @@ vase_project_starter/
 ├─ report/
 │  ├─ report.tex                # LaTeX 项目报告
 │  └─ report.pdf                # 编译后的项目报告
-├─ output/
+├─ viewer/
 │  ├─ CMakeLists.txt            # OpenGL/GLUT 构建配置
 │  ├─ src/main.cpp              # 三维旋转曲面程序
 │  ├─ include/gl/glut.h         # GLUT 头文件
@@ -33,8 +33,7 @@ vase_project_starter/
 │  └─ build/                    # CMake 构建目录，需自行生成
 ├─ contour_review.png           # 轮廓点检查图
 ├─ threshold_preview.png        # 阈值候选像素预览
-├─ requirements.txt             # Python 依赖
-└─ vase_viewer.cpp              # 旧版简单 CSV 查看器
+└─ requirements.txt             # Python 依赖
 ```
 
 ## 环境要求
@@ -62,9 +61,9 @@ pip install -r requirements.txt
 三维显示部分使用 Windows OpenGL、GLU 和 GLUT。项目已经提供：
 
 ```text
-output/include/gl/glut.h
-output/lib/glut32.lib
-output/lib/glut32.dll
+viewer/include/gl/glut.h
+viewer/lib/glut32.lib
+viewer/lib/glut32.dll
 ```
 
 也支持回退使用 `glut.lib` 和 `glut.dll`。建议使用 Visual Studio 2022
@@ -185,7 +184,7 @@ final_fit_comparison.png    # 右半轮廓和完整轮廓对比图
 进入 OpenGL 项目目录：
 
 ```powershell
-cd output
+cd viewer
 ```
 
 使用 CMake 配置和构建：
@@ -205,14 +204,14 @@ cmake --build build --config Release
 构建完成后，程序通常位于：
 
 ```text
-output/build/Release/VaseReconstruction.exe
+viewer/build/Release/VaseReconstruction.exe
 ```
 
 程序构建后会自动把对应的 GLUT DLL 复制到可执行文件目录。
 
 ## 第四步：运行三维重建
 
-从 `output` 目录运行时，程序会自动寻找最终右半曲线：
+从 `viewer` 目录运行时，程序会自动寻找最终右半曲线：
 
 ```powershell
 .\build\Release\VaseReconstruction.exe
@@ -264,8 +263,8 @@ CSV 在程序启动时读取一次。重新运行 `final_fit.py` 生成新的 CS
 
 只有修改以下内容时才需要重新编译：
 
-- `output/src/main.cpp`；
-- `output/CMakeLists.txt`；
+- `viewer/src/main.cpp`；
+- `viewer/CMakeLists.txt`；
 - OpenGL 交互逻辑；
 - 曲面网格生成逻辑；
 - 法向量、光照或材质实现。
