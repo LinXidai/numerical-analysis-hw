@@ -134,8 +134,6 @@ python extract_vase_hybrid.py
 | 操作成本 | 点击点数较多 | 点击锚点较少 |
 | 推荐场景 | 边缘模糊或局部复杂 | 边缘清晰、轮廓较长 |
 
-推荐的实际工作方式是：先使用混合方法快速获得轮廓，再对瓶口、瓶底、瓶肩和
-网格线交叉处进行人工检查和修正。
 
 ## 第二步：运行最终分段拟合
 
@@ -190,15 +188,20 @@ cd viewer
 使用 CMake 配置和构建：
 
 ```powershell
-cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake -S . -B build -A Win32
 cmake --build build --config Release
 ```
 
-如果使用默认生成器，也可以：
+注意：项目自带的 GLUT 库是 32 位（x86）的，配置时必须加 `-A Win32`；
+若按默认的 x64 平台配置，CMake 会直接报错终止。
+
+也可以使用传统方式手动创建构建目录：
 
 ```powershell
-cmake -S . -B build
-cmake --build build --config Release
+mkdir build
+cd build
+cmake -A Win32 ..
+cmake --build . --config Release
 ```
 
 构建完成后，程序通常位于：
