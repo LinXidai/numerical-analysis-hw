@@ -1,8 +1,8 @@
 method,eval_points,input_points,smoothing_parameter,note
-linear,1200,64,,visual comparison; use held-out points for meaningful validation error
-cubic_spline,1200,64,,visual comparison; use held-out points for meaningful validation error
-pchip,1200,64,,visual comparison; use held-out points for meaningful validation error
-akima,1200,64,,visual comparison; use held-out points for meaningful validation error
-bspline_cubic,1200,64,,visual comparison; use held-out points for meaningful validation error
-smoothing_spline,1200,64,0.7462635893493889,visual comparison; use held-out points for meaningful validation error
-poly_lstsq_deg5,1200,64,,visual comparison; use held-out points for meaningful validation error
+linear,1200,49,,visual comparison; use held-out points for meaningful validation error
+cubic_spline,1200,49,,visual comparison; use held-out points for meaningful validation error
+pchip,1200,49,,visual comparison; use held-out points for meaningful validation error
+akima,1200,49,,visual comparison; use held-out points for meaningful validation error
+bspline_cubic,1200,49,,visual comparison; use held-out points for meaningful validation error
+smoothing_spline,1200,49,0.6005705014016899,visual comparison; use held-out points for meaningful validation error
+poly_lstsq_deg5,1200,49,,visual comparison; use held-out points for meaningful validation error

@@ -101,6 +101,7 @@ The main numerical difficulties are:
 \texttt{extract\_vase\_hybrid.py} & Anchor-point extraction with local edge snapping and densification.\\
 \texttt{vase\_points.csv} & Ordered input contour points.\\
 \texttt{fit\_methods.py} & Comparison of seven parameter-curve methods and generation of figures and CSV files.\\
+\texttt{compare\_metrics.py} & Unified train, LOOCV, arc-length, and outside-box metrics for all methods and the final fit.\\
 \texttt{final\_fit.py} & Geometry-aware piecewise fit and final symmetric contour.\\
 \texttt{fit\_output/} & Fitted curves, comparison figures, summaries, and numerical comparison data.\\
 \texttt{viewer/src/main.cpp} & OpenGL program that rotates the right profile around the vertical axis.\\
@@ -139,11 +140,28 @@ B(u,v)=
 0,& I_g(u,v)\geq T.
 \end{cases}
 \]
-The current implementation uses $T=100$.  This binary image is only a diagnostic
-preview: automatically joining all dark pixels would incorrectly connect axes,
-grid lines, text, and the vase boundary.
+The current implementation uses $T=180$.  At this threshold the vase boundary,
+the coordinate axes, and the tick labels are all selected at once, as the
+preview below shows: because the profile intersects both axes, its dark pixels
+merge with them into a single connected component, while the labels remain as
+extra blobs beside it.  Raising $T$ to about $235$, the gray level of the grid
+lines, would additionally merge the whole grid lattice into the preview.  The
+binary image is therefore kept only as a diagnostic preview and never as a
+segmentation: no single threshold isolates the contour.
 
 \figplaceholder[0.78\textwidth]{../threshold_preview.png}{Threshold preview}
+
+The same ambiguity rules out semi-automatic edge assistance.
+\texttt{extract\_vase\_hybrid.py} snaps each user anchor and each interpolated
+point to the strongest Canny or Laplacian edge in a small window, but on this
+image the coordinate axes and the strokes of the tick numerals produce
+stronger edges than the thin, mid-gray profile, so points near such features,
+for instance where the profile crosses the $x$-axis, are pulled off the true
+contour onto an axis or a glyph, distorting the reconstructed profile, and
+the grid lattice contributes further fragmented spurious edges of its own.
+The final point set is
+therefore produced with the fully manual \texttt{extract\_vase.py}, in which
+every contour point is placed by the user and verified in the review image.
 
 \subsection{Pixel-to-coordinate transformation}
 
@@ -170,7 +188,7 @@ increase downward, whereas mathematical $y$ increases upward.
 The contour points are recorded in boundary order rather than sorted by $x$.
 This is important because vertical parts, horizontal parts, and folds near the
 rim or base may cause several contour locations to have similar $x$ values.
-The current input contains 84 non-repeated points after duplicate removal.
+The current input contains 49 non-repeated points after duplicate removal.
 
 \figplaceholder[0.78\textwidth]{../contour_review.png}{Extracted contour review}
 
@@ -208,14 +226,113 @@ the result at 1200 equally spaced parameter values.
 \item \textbf{Cubic B-spline interpolation}: smooth and exact at the data points,
   but sensitive to the global spline representation.
 \item \textbf{Smoothing spline}: deliberately does not pass through every point;
-  its smoothing parameter is $s=0.7462635893$ for the current data.
+  its smoothing parameter is $s=0.6005705014$ for the current data.
 \item \textbf{Degree-five least-squares polynomial}: a global approximation used
   as a baseline, not as the final contour model.
 \end{enumerate}
 
+\subsection{Mathematical principles of the seven methods}
+
+All seven methods act componentwise on the scalar sequences $(t_i,x_i)$ and
+$(t_i,y_i)$, so it suffices to state one component.  Let
+$h_i=t_{i+1}-t_i$ and $\delta_i=(x_{i+1}-x_i)/h_i$ denote the parameter
+intervals and the secant slopes.
+
+\textbf{Linear interpolation.}  On $[t_i,t_{i+1}]$ the curve is
+\[
+x(t)=x_i+\delta_i\,(t-t_i),
+\]
+a convex combination of the two endpoint values.  Hence the interpolant never
+leaves the local data range and cannot overshoot; its error for smooth data is
+$O(h_i^2)$, and its derivative jumps at every node, so the curve is only $C^0$.
+
+\textbf{Natural cubic spline.}  The interpolant $S$ is a piecewise cubic with
+$S(t_i)=x_i$ and continuous first and second derivatives, closed by the natural
+conditions $S''(t_0)=S''(t_n)=0$.  Writing $M_i=S''(t_i)$, continuity of $S'$
+forces the tridiagonal system
+\[
+\frac{h_{i-1}}{6}M_{i-1}+\frac{h_{i-1}+h_i}{3}M_i+\frac{h_i}{6}M_{i+1}
+=\delta_i-\delta_{i-1},\qquad i=1,\dots,n-1,
+\]
+with $M_0=M_n=0$.  Among all $C^2$ interpolants, $S$ minimizes
+$\int_{t_0}^{t_n}|S''(t)|^2\,\mathrm dt$, the bending energy of a thin elastic
+beam.  This variational property explains both its global smoothness and its
+global coupling: one irregular interval perturbs the moments everywhere and can
+produce overshoot where the curvature changes rapidly.
+
+\textbf{PCHIP and Akima: cubic Hermite with controlled slopes.}  Both methods
+build, on each $[t_i,t_{i+1}]$, the cubic Hermite piece that matches prescribed
+node slopes $d_i$:
+\[
+x(t)=x_i\,\phi_0(\tau)+x_{i+1}\,\phi_1(\tau)
++h_i\big(d_i\,\psi_0(\tau)+d_{i+1}\,\psi_1(\tau)\big),\qquad
+\tau=\frac{t-t_i}{h_i},
+\]
+with $\phi_0(\tau)=(1-\tau)^2(1+2\tau)$, $\phi_1(\tau)=\tau^2(3-2\tau)$,
+$\psi_0(\tau)=\tau(1-\tau)^2$, and $\psi_1(\tau)=\tau^2(\tau-1)$.  The two
+methods differ only in how $d_i$ is chosen.  PCHIP sets $d_i=0$ whenever
+$\delta_{i-1}\delta_i\le 0$ and otherwise takes a weighted harmonic mean,
+\[
+d_i=\frac{w_1+w_2}{w_1/\delta_{i-1}+w_2/\delta_i},\qquad
+w_1=2h_i+h_{i-1},\quad w_2=h_i+2h_{i-1},
+\]
+which keeps $d_i$ between $\delta_{i-1}$ and $\delta_i$; the resulting curve is
+monotone on every interval where the data are monotone, so no spurious extremum
+or overshoot can appear.  Akima instead weights the two central secants by the
+disagreement of their neighbours,
+\[
+d_i=\frac{|\delta_{i+1}-\delta_i|\,\delta_{i-1}
++|\delta_{i-1}-\delta_{i-2}|\,\delta_i}
+{|\delta_{i+1}-\delta_i|+|\delta_{i-1}-\delta_{i-2}|},
+\]
+falling back to $(\delta_{i-1}+\delta_i)/2$ when the denominator vanishes.  A
+side whose slope changes abruptly receives little weight, so an isolated
+abnormal slope influences at most a few intervals.  Both constructions are
+$C^1$ and local, in contrast to the globally coupled natural spline.
+
+\textbf{Cubic B-spline interpolation.}  Here
+$x(t)=\sum_j c_j N_{j,3}(t)$ is expressed in the cubic B-spline basis over a
+knot sequence derived from the parameters, with SciPy's default end conditions.
+Each basis function $N_{j,3}$ is a $C^2$ piecewise polynomial supported on only
+four knot spans, and the interpolation conditions
+$\sum_j c_j N_{j,3}(t_i)=x_i$ form a banded linear system for the coefficients
+$c_j$.  The representation is therefore smooth and locally supported, but the
+coefficients must still be solved across the whole band, and non-uniform
+parameter spacing can amplify local perturbations in this system, which is
+consistent with the large LOOCV error of this method in
+Table~\ref{tab:comparison}.
+
+\textbf{Smoothing spline.}  This method abandons exact interpolation and solves
+Reinsch's constrained problem,
+\[
+\min_S \int_{t_0}^{t_n}|S''(t)|^2\,\mathrm dt
+\quad\text{subject to}\quad
+\sum_{i=0}^{n}\big(S(t_i)-x_i\big)^2\le s,
+\]
+equivalently a penalized least squares $\sum_i (S(t_i)-x_i)^2
++\lambda\int|S''|^2\,\mathrm dt$ with $\lambda$ tied to $s$.  The solution is
+again a natural cubic spline with knots at the data points, but it only
+approaches them: $s=0$ recovers the interpolating spline, while $s=0.6006$,
+the value used here, trades a training residual of $0.1566$
+(Table~\ref{tab:comparison}) for reduced curvature.  It is the appropriate tool
+for noisy data and a source of bias for clean data.
+
+\textbf{Degree-five least-squares polynomial.}  The baseline fits
+$p(t)=\sum_{k=0}^{5}a_k t^k$ by minimizing $\sum_i (p(t_i)-x_i)^2$, i.e.\ solving
+the normal equations $V^\top V\,\bm a=V^\top \bm x$ with the Vandermonde matrix
+$V_{ik}=t_i^k$, computed with a stabilized least-squares solver.  Six
+coefficients cannot reproduce the neck, belly, and foot of the profile
+simultaneously, and raising the degree would replace underfitting by
+Runge-type oscillation; the global polynomial is therefore kept only as a
+reference, not as a contour model.
+
+Taken together, the seven methods span $C^0$ to $C^2$ smoothness, global to
+local support, and exact interpolation to controlled smoothing; the metrics of
+the next subsection quantify precisely these trade-offs.
+
 \subsection{Evaluation metrics}
 
-The following quantities were computed from the same 84 input points.
+The following quantities were computed from the same 49 input points.
 For a method with predicted values $\widehat{\bm p}_i$ at the input parameters,
 \[
 e_i=\|\widehat{\bm p}_i-\bm p_i\|_2,\qquad
@@ -225,7 +342,10 @@ e_i=\|\widehat{\bm p}_i-\bm p_i\|_2,\qquad
 For interpolation methods, the training error is expected to be zero and is
 therefore not a useful selection criterion.  A more informative test is
 leave-one-out cross-validation (LOOCV): remove one point, rebuild the method,
-predict the removed point, and repeat for all 84 points.  The resulting
+predict the removed point, and repeat for every interior point.  The two
+endpoint folds are excluded because holding out an endpoint leaves no
+enclosing parameter interval, so the prediction would degenerate into
+extrapolation.  The resulting
 \[
 \mathrm{RMSE}_{\mathrm{LOOCV}}
 =\sqrt{\frac{1}{n}\sum_{i=1}^{n}e_{i,\mathrm{LOO}}^2}
@@ -236,7 +356,8 @@ Two geometric diagnostics were also used:
 \begin{itemize}
 \item the arc length of the 1200-point fitted curve;
 \item the percentage of evaluated points outside the bounding box of the input
-  points, which detects overshoot.
+  points, which detects overshoot; excursions below $10^{-9}$ are ignored so
+  that one-ULP noise on flat segments is not counted.
 \end{itemize}
 
 \section{Numerical Comparison}
@@ -248,7 +369,8 @@ data are stored in the generated numerical-comparison CSV file in the
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Numerical comparison of the seven fitting methods}
+\caption{Numerical comparison of the seven fitting methods and the final
+piecewise fit}
 \label{tab:comparison}
 \begin{tabular}{lrrrrr}
 \toprule
@@ -259,13 +381,14 @@ data are stored in the generated numerical-comparison CSV file in the
 \textbf{Arc length} &
 \textbf{Outside (\%)}\\
 \midrule
-Linear & 0.0000 & 0.0736 & 0.7610 & 34.1701 & 0.00\\
-Natural cubic spline & 0.0000 & 0.0868 & 0.8534 & 34.9503 & 3.67\\
-PCHIP & 0.0000 & 0.1051 & 2.6532 & 34.5964 & 0.00\\
-Akima & 0.0000 & 0.0697 & 0.7675 & 34.7188 & 4.75\\
-Cubic B-spline & 0.0000 & 0.3159 & 16.3930 & 35.0172 & 3.67\\
-Smoothing spline & 0.1369 & 0.1655 & 1.4916 & 31.4478 & 2.00\\
-Degree-five polynomial & 0.6298 & 0.6096 & 2.7325 & 27.5638 & 0.17\\
+Linear & 0.0000 & 0.0949 & 0.4086 & 32.6112 & 0.00\\
+Natural cubic spline & 0.0000 & 0.0915 & 0.2722 & 32.7508 & 6.00\\
+PCHIP & 0.0000 & 0.0837 & 0.2576 & 32.7117 & 0.00\\
+Akima & 0.0000 & 0.0825 & 0.3142 & 32.7909 & 1.67\\
+Cubic B-spline & 0.0000 & 0.0916 & 0.2722 & 32.7526 & 6.00\\
+Smoothing spline & 0.1566 & 0.2095 & 0.5870 & 31.4974 & 12.42\\
+Degree-five polynomial & 0.6417 & 0.7007 & 1.3829 & 27.9902 & 20.50\\
+Final piecewise fit & 0.0000 & 0.0778 & 0.3268 & 32.6761 & 1.75\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -274,28 +397,31 @@ Degree-five polynomial & 0.6298 & 0.6096 & 2.7325 & 27.5638 & 0.17\\
 
 The results support several numerical conclusions:
 \begin{enumerate}
-\item Linear interpolation has no overshoot and a moderate LOOCV error, but its
-  derivative is discontinuous at every input point.
-\item Akima has the lowest LOOCV RMSE, while its 4.75\% outside-box rate shows
-  that local smoothness can still create small geometric excursions.
-\item PCHIP is slightly less accurate under LOOCV than Akima, but it has no
-  outside-box samples and preserves the contour's local shape.  This is valuable
-  for a physical vase profile.
-\item Natural cubic splines are smooth, but their 3.67\% outside-box rate
-  confirms the possibility of overshoot near rapidly changing curvature.
-\item Cubic B-splines have a substantially larger LOOCV error and extreme
-  worst-case error.  Exact interpolation at the training points does not
-  guarantee stable behavior between points.
-\item The smoothing spline reduces the arc length and has nonzero training
-  error, indicating visible smoothing bias.  It may be useful for noisy data,
-  but it changes the measured geometry here.
-\item The degree-five global polynomial has the largest training bias among the
-  approximation methods and the shortest curve, so it cannot represent all
-  local vase features simultaneously.
+\item Linear interpolation has no overshoot (0.00\% outside the box) and a
+  moderate LOOCV error of 0.0949, but its derivative is discontinuous at every
+  input point.
+\item Akima has the lowest LOOCV RMSE among the single methods (0.0825), while
+  its 1.67\% outside-box rate shows that local smoothness can still create
+  small geometric excursions.
+\item PCHIP is close behind (0.0837) and has no outside-box samples at all,
+  preserving the contour's local shape.  This is valuable for a physical vase
+  profile.
+\item Natural cubic splines are smooth, but their 6.00\% outside-box rate
+  confirms overshoot near rapidly changing curvature.
+\item The cubic B-spline behaves like the natural spline on this sample
+  (LOOCV 0.0916, 6.00\% outside): exact interpolation at the training points
+  does not prevent overshoot between them.
+\item The smoothing spline has nonzero training error (0.1566), a shortened arc
+  length (31.4974), and 12.42\% outside-box samples: a visible smoothing bias
+  on clean data.  It may be useful for noisy data, but it changes the measured
+  geometry here.
+\item The degree-five global polynomial has the largest training bias
+  (0.6417), the shortest curve (27.9902), and 20.50\% outside-box samples, so
+  it cannot represent all local vase features simultaneously.
 \end{enumerate}
 
-\figplaceholder[0.91\textwidth]{../fit_output/method_comparison.png}{Right-half method comparison}
-\figplaceholder[0.91\textwidth]{../fit_output/full_vase_comparison.png}{Full symmetric contour comparison}
+\figplaceholder[0.60\textwidth]{../fit_output/method_comparison.png}{Right-half method comparison}
+\figplaceholder[0.60\textwidth]{../fit_output/full_vase_comparison.png}{Full symmetric contour comparison}
 
 \section{Geometry-Aware Final Fit}
 
@@ -306,18 +432,39 @@ Instead, it uses geometric regions detected from the ordered data:
 \toprule
 \textbf{Region} & \textbf{Indices} & \textbf{Method} & \textbf{Reason}\\
 \midrule
-Top neck to base & 0--43 & PCHIP & preserve the narrow, monotone trend\\
-Rounded base & 43--49 & Cubic spline & obtain a smooth rounded transition\\
-Lower body & 49--56 & PCHIP & avoid unnecessary overshoot\\
-Shoulder & 56--76 & Akima & handle local curvature changes\\
-Rim and top & 76--83 & PCHIP & preserve the top transition\\
+Top neck to base & 0--17 & PCHIP & preserve the narrow, monotone trend\\
+Rounded base & 17--24 & Cubic spline & obtain a smooth rounded transition\\
+Lower body & 24--29 & PCHIP & avoid unnecessary overshoot\\
+Shoulder & 29--39 & Akima & handle local curvature changes\\
+Rim and top & 39--48 & PCHIP & preserve the top transition\\
 \bottomrule
 \end{tabular}
 \end{center}
 
 Each segment fits both coordinates as functions of the same chord parameter.
 The segment samples are joined without duplicate endpoints and resampled to a
-uniform output grid.  The resulting final comparison figure is shown below.
+uniform output grid.
+
+Applying the metrics of Section~5.3 to the final piecewise curve (last row of
+Table~\ref{tab:comparison}) gives training RMSE $0$, since every input point is
+an interpolation node of its own segment, and LOOCV RMSE $0.0778$, which is
+lower than that of any single method (best single method: Akima, $0.0825$).
+Repeating LOOCV with the segment boundaries fixed at their full-data values
+yields the identical value, so the automatic boundary detection is stable under
+point removal.  The arc length is $32.6761$, and $1.75\%$ of the evaluated
+samples lie outside the input bounding box, all within $0.008$ units of it: a
+slight dip of the rounded-base cubic segment below the lowest input point.
+
+The comparison supports the piecewise strategy.  No single method is best
+everywhere: Akima and PCHIP lead the single-method LOOCV ranking, yet Akima
+leaves the box and PCHIP would facet the rounded base; the natural and
+B-splines overshoot on $6.00\%$ of the samples; the smoothing spline and the
+global polynomial bias the geometry (training RMSE $0.1566$ and $0.6417$).
+Assigning to each region the method whose assumptions match its local shape
+combines their strengths: the composite achieves the lowest LOOCV RMSE of all
+candidates with zero training error, and confines its only overshoot to the
+$0.008$-unit dip at the base.  The resulting final comparison figure is shown
+below.
 
 \figplaceholder[0.91\textwidth]{../fit_output/final_fit_comparison.png}{Final piecewise fit and symmetric reconstruction}
 
@@ -351,6 +498,29 @@ and angular samples form quadrilateral strips.  The program also computes
 approximate normals, depth testing, lighting, wireframe mode, camera movement,
 and interactive rotation.
 
+\textbf{Profile reading.}  The viewer opens the CSV given as its first command
+line argument, falling back to a few relative paths when launched without one.
+It parses the header to locate the \texttt{x} and \texttt{y} columns, so the
+parameter column of \texttt{final\_fit\_right\_curve.csv} cannot be mistaken
+for a radius, takes $|x|$ as the radius and $y$ as the height, discards
+non-finite or malformed rows, and requires at least three points.  The height
+extent also sets the initial camera distance, $\max(12,\,1.45\,\Delta y)$.
+
+\textbf{Mesh, lighting, and interaction.}  Each consecutive profile pair
+emits one quad strip over the 96 slices, with per-vertex normals obtained by
+rotating the two-dimensional profile normal $(\mathrm dh,-\mathrm dr)/
+\|(\mathrm dr,\mathrm dh)\|$ into three dimensions; the model is centered at
+mid-height, depth tested, and smooth shaded with normalized normals.  Lighting
+uses one positional light, \texttt{GL\_LIGHT0}, with ambient $0.18$, warm
+diffuse $(1.0,0.78,0.58)$, and specular $0.8$ at $(8,12,10)$, against a
+terracotta material of shininess 48; \texttt{F} toggles lighting and
+\texttt{1/2/3} switch between warm, cool, and white diffuse color.  Interaction
+is keyboard driven: \texttt{W/A/S/D} or the arrow keys rotate yaw and pitch in
+$5^\circ$ steps, \texttt{+/-} and PgUp/PgDn zoom, \texttt{I/J/K/L} pan the view
+target, \texttt{T} toggles wireframe, \texttt{O} toggles an axis overlay,
+space toggles auto-rotation, \texttt{R} resets the view, and \texttt{Q} or Esc
+quits.
+
 \section{Reproducibility}
 
 \subsection{Python processing}
@@ -358,16 +528,27 @@ and interactive rotation.
 python -m pip install -r requirements.txt
 python extract_vase.py
 python fit_methods.py
+python compare_metrics.py
 python final_fit.py
 \end{lstlisting}
 
 \subsection{OpenGL build}
 \begin{lstlisting}
 cd viewer
-cmake -S . -B build
+cmake -S . -B build -A Win32
 cmake --build build --config Release
-VaseReconstruction.exe ../../fit_output/final_fit_right_curve.csv
+build\Release\VaseReconstruction.exe ..\fit_output\final_fit_right_curve.csv
 \end{lstlisting}
+The bundled GLUT libraries are 32-bit, so with the Visual Studio generator the
+target platform must be set to Win32; \texttt{CMakeLists.txt} refuses a 64-bit
+configuration with an explicit error instead of failing later at link time.
+The same \texttt{CMakeLists.txt} copies \texttt{glut32.dll} next to the
+executable as a post-build step, so no manual deployment is needed.  The
+executable path above follows the multi-config layout of that generator, and
+the CSV path is relative to the \texttt{viewer} directory.  The CSV argument is
+optional data input---the fitted profile to render---not a runtime dependency:
+launched without it, the viewer searches a few relative paths for
+\texttt{final\_fit\_right\_curve.csv} itself.
 
 \section{Conclusion}
 

@@ -124,7 +124,7 @@ def main():
         return
     crop = image[y0 : y0 + height, x0 : x0 + width].copy()
     gray, strength, edges = edge_map(crop)
-    _, binary = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)
+    _, binary = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
     cv2.imwrite(THRESHOLD_PREVIEW, binary)
 
     calibration = []

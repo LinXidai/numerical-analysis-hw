@@ -61,9 +61,9 @@ def main():
     # 生成候选暗像素图，只用于人工检查，不直接把所有暗像素当成轮廓
     gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (3, 3), 0)
-    _, binary = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)
+    _, binary = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
     cv2.imwrite("threshold_preview.png", binary)
-    print("已保存 threshold_preview.png（候选暗像素预览，网格线也会出现）。")
+    print("已保存 threshold_preview.png（候选暗像素预览：轮廓、坐标轴与标注文字同时被选中，网格线不入选）。")
 
     points = []
     mode = "calibration"

@@ -24,6 +24,15 @@ if (NOT EXISTS "${GLUT_LIBRARY}")
     message(FATAL_ERROR "No glut32.lib or glut.lib found in ${LOCAL_LIB_DIR}")
 endif()
 
+# The bundled GLUT libraries are 32-bit (x86); refuse to configure for x64,
+# otherwise linking fails with LNK2019/LNK4272. Configure with: cmake -B build -A Win32
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    message(FATAL_ERROR
+        "The bundled GLUT libraries in ${LOCAL_LIB_DIR} are 32-bit (x86), "
+        "but this build is configured for 64-bit. "
+        "Re-configure with: cmake -B build -A Win32")
+endif()
+
 add_executable(VaseReconstruction src/main.cpp)
 target_include_directories(VaseReconstruction PRIVATE "${LOCAL_INCLUDE_DIR}")
 target_link_libraries(VaseReconstruction PRIVATE
