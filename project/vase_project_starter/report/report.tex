@@ -348,9 +348,10 @@ enclosing parameter interval, so the prediction would degenerate into
 extrapolation.  The resulting
 \[
 \mathrm{RMSE}_{\mathrm{LOOCV}}
-=\sqrt{\frac{1}{n}\sum_{i=1}^{n}e_{i,\mathrm{LOO}}^2}
+=\sqrt{\frac{1}{n-2}\sum_{i=2}^{n-1}e_{i,\mathrm{LOO}}^2}
 \]
-measures sensitivity to unseen points.
+measures sensitivity to unseen points, with the sum running over the $n-2$
+interior folds.
 
 Two geometric diagnostics were also used:
 \begin{itemize}
@@ -447,7 +448,12 @@ uniform output grid.
 
 Applying the metrics of Section~5.3 to the final piecewise curve (last row of
 Table~\ref{tab:comparison}) gives training RMSE $0$, since every input point is
-an interpolation node of its own segment, and LOOCV RMSE $0.0778$, which is
+an interpolation node of its own segment.  This zero is the value of the exact
+piecewise interpolator at the original parameter nodes; the saved uniformly
+resampled curve in \texttt{final\_fit\_right\_curve.csv}, evaluated back at the
+same 49 input parameters, has RMSE about $0.00137$
+(\texttt{final\_fit\_summary.csv}), which is resampling error from the fixed
+output grid rather than fitting residual.  The LOOCV RMSE is $0.0778$, which is
 lower than that of any single method (best single method: Akima, $0.0825$).
 Repeating LOOCV with the segment boundaries fixed at their full-data values
 yields the identical value, so the automatic boundary detection is stable under
