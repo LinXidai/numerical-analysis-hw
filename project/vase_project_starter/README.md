@@ -16,23 +16,28 @@ OpenGL 中将二维母线绕竖直轴旋转，生成可交互观察的三维花�
 
 ```text
 vase_project_starter/
+├─ vase_project.png             # 输入图像：带坐标网格的花瓶照片
 ├─ extract_vase.py              # 人工主导的轮廓提取
 ├─ extract_vase_hybrid.py       # 人工锚点 + 自动边缘吸附
 ├─ final_fit.py                 # 最终分段拟合和对称重构
 ├─ fit_methods.py               # 多种拟合方法的对比实验
+├─ compare_metrics.py           # 统一数值评价指标（Train RMSE、LOOCV 等）
 ├─ vase_points.csv              # 提取后的输入轮廓点
-├─ fit_output/                  # 拟合结果、CSV、汇总表和图片
+├─ fit_output/                  # 拟合结果 CSV、汇总表和对比图片
+│  └─ method_numerical_comparison.csv  # 各方法数值指标对比表
 ├─ report/
 │  ├─ report.tex                # LaTeX 项目报告
-│  └─ report.pdf                # 编译后的项目报告
+│  ├─ report.pdf                # 编译后的项目报告
+│  └─ demo1.png                 # 三维重建结果截图（报告用）
 ├─ viewer/
 │  ├─ CMakeLists.txt            # OpenGL/GLUT 构建配置
 │  ├─ src/main.cpp              # 三维旋转曲面程序
 │  ├─ include/gl/glut.h         # GLUT 头文件
-│  ├─ lib/                      # GLUT 的 .lib 和 .dll
+│  ├─ lib/                      # glut32/glut 的 .lib 和 .dll
 │  └─ build/                    # CMake 构建目录，需自行生成
 ├─ contour_review.png           # 轮廓点检查图
 ├─ threshold_preview.png        # 阈值候选像素预览
+├─ README.md                    # 项目说明文档
 └─ requirements.txt             # Python 依赖
 ```
 
